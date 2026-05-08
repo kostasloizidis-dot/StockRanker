@@ -1,0 +1,215 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>Stock Rankings</PageTitle>
+
+<div class="mb-4">
+    <h1>StockRanker</h1>
+    <p class="text-muted">Ranking S&P 500 companies by how close the current price is to the 6-month low.</p>
+</div>
+
+<div class="row g-3 align-items-center mb-4">
+    <div class="col-sm-6">
+        <input class="form-control" placeholder="Search by company name" @bind="searchTerm" @bind:event="oninput" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" @onclick="RefreshAsync" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Refreshing...</span>
+            }
+            else
+            {
+                <span>Refresh</span>
+            }
+        </button>
+    </div>
+    <div class="col-auto text-muted">
+        <small>Last updated: @lastUpdatedDisplay</small>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+
+@if (messages?.Any() == true)
+{
+    <div class="alert alert-warning" role="alert">
+        <ul class="mb-0">
+            @foreach (var message in messages)
+            {
+                <li>@message</li>
+            }
+        </ul>
+    </div>
+}
+
+@if (rankings is null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!FilteredRankings.Any())
+{
+    <div class="alert alert-info">No matching companies were found.</div>
+}
+else
+{
+    <div class="table-responsive d-none d-md-block">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Company</th>
+                    <th>Price</th>
+                    <th>6m Low</th>
+                    <th>Score</th>
+                    <th>Label</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in FilteredRankings)
+                {
+                    <tr>
+                        <td>@item.Rank</td>
+                        <td>@item.CompanyName (@item.Symbol)</td>
+                        <td>@item.CurrentPrice.ToString("C")</td>
+                        <td>@item.SixMonthLow.ToString("C")</td>
+                        <td>@item.Score.ToString("F1")</td>
+                        <td><span class="badge bg-secondary">@item.Label</span></td>
+                        <td><span class="badge @(BadgeClass(item.Status))">@item.Status</span></td>
+                        <td>@(item.IsIncomplete ? "Incomplete history" : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-md-none">
+        @foreach (var item in FilteredRankings)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title mb-1">#@item.Rank — @item.CompanyName</h5>
+                            <p class="card-subtitle text-muted">@item.Symbol</p>
+                        </div>
+                        <span class="badge @(BadgeClass(item.Status))">@item.Status</span>
+                    </div>
+                    <p class="mb-1"><strong>Price:</strong> @item.CurrentPrice.ToString("C")</p>
+                    <p class="mb-1"><strong>6m Low:</strong> @item.SixMonthLow.ToString("C")</p>
+                    <p class="mb-1"><strong>Score:</strong> @item.Score.ToString("F1")</p>
+                    <p class="mb-1"><strong>Label:</strong> @item.Label</p>
+                    @if (item.IsIncomplete)
+                    {
+                        <p class="text-warning mb-0">Incomplete history</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool isLoading;
+    private string? errorMessage;
+    private string searchTerm = string.Empty;
+    private List<StockRankingDto>? rankings;
+    private DateTimeOffset? snapshotTimestamp;
+    private bool hasFetchErrors;
+    private List<string>? messages;
+
+    private string lastUpdatedDisplay => snapshotTimestamp?.ToLocalTime().ToString("g") ?? "Not loaded";
+
+    private IEnumerable<StockRankingDto> FilteredRankings => rankings is null
+        ? Enumerable.Empty<StockRankingDto>()
+        : rankings.Where(item => string.IsNullOrWhiteSpace(searchTerm) || item.CompanyName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRankingsAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadRankingsAsync(refresh: true);
+    }
+
+    private async Task LoadRankingsAsync(bool refresh = false)
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            StockRankingSnapshotDto? snapshot;
+
+            if (refresh)
+            {
+                using var response = await Http.PostAsync("api/stocks/refresh", null);
+                response.EnsureSuccessStatusCode();
+                snapshot = await response.Content.ReadFromJsonAsync<StockRankingSnapshotDto>();
+            }
+            else
+            {
+                snapshot = await Http.GetFromJsonAsync<StockRankingSnapshotDto>("api/stocks/rankings");
+            }
+
+            if (snapshot is null)
+            {
+                errorMessage = "Unable to load rankings.";
+                return;
+            }
+
+            rankings = snapshot.Rankings.ToList();
+            snapshotTimestamp = snapshot.GeneratedAt;
+            hasFetchErrors = snapshot.HasFetchErrors;
+            messages = snapshot.Messages?.ToList() ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string BadgeClass(string status) => status switch
+    {
+        "LatestFetchFailed" => "bg-warning text-dark",
+        "Fresh" => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private sealed record StockRankingDto(
+        string Symbol,
+        string CompanyName,
+        decimal CurrentPrice,
+        decimal SixMonthLow,
+        decimal Score,
+        int Rank,
+        string Label,
+        bool IsIncomplete,
+        string Status,
+        DateTimeOffset PriceTimestamp,
+        DateTimeOffset GeneratedAt);
+
+    private sealed record StockRankingSnapshotDto(
+        DateTimeOffset GeneratedAt,
+        IReadOnlyList<StockRankingDto> Rankings,
+        bool HasFetchErrors,
+        IReadOnlyList<string>? Messages);
+}

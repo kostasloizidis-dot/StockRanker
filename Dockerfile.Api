@@ -1,0 +1,17 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY ["StockRanker.Api/StockRanker.Api.csproj", "StockRanker.Api/"]
+COPY ["StockRanker.Application/StockRanker.Application.csproj", "StockRanker.Application/"]
+COPY ["StockRanker.Infrastructure/StockRanker.Infrastructure.csproj", "StockRanker.Infrastructure/"]
+COPY ["StockRanker.Domain/StockRanker.Domain.csproj", "StockRanker.Domain/"]
+
+RUN dotnet restore "StockRanker.Api/StockRanker.Api.csproj"
+
+COPY . .
+RUN dotnet publish "StockRanker.Api/StockRanker.Api.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "StockRanker.Api.dll"]

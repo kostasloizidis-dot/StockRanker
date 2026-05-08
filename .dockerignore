@@ -1,0 +1,13 @@
+bin/
+obj/
+*.md
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+**/bin/
+**/obj/
+**/*.db
+**/.git
+**/.gitignore
