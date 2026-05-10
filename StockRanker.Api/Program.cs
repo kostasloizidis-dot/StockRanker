@@ -21,9 +21,24 @@ builder.Services.Configure<JsonStockPriceProviderOptions>(options =>
         options.FilePath = Path.Combine(builder.Environment.ContentRootPath, options.FilePath);
     }
 });
+builder.Services.Configure<FinnhubOptions>(builder.Configuration.GetSection("Finnhub"));
 builder.Services.Configure<StockRankingCacheOptions>(builder.Configuration.GetSection("StockRankingCache"));
 
-builder.Services.AddSingleton<IStockPriceProvider, JsonStockPriceProvider>();
+var stockPriceProvider = builder.Configuration.GetSection("StockPriceProvider").Get<StockPriceProviderOptions>() ?? new StockPriceProviderOptions();
+var finnhubApiKey = builder.Configuration["Finnhub:ApiKey"];
+var useFinnhub = string.Equals(stockPriceProvider.Provider, "Finnhub", StringComparison.OrdinalIgnoreCase)
+    || (string.Equals(stockPriceProvider.Provider, "Auto", StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(finnhubApiKey));
+
+if (useFinnhub)
+{
+    builder.Services.AddHttpClient<IStockPriceProvider, FinnhubStockPriceProvider>();
+}
+else
+{
+    builder.Services.AddSingleton<IStockPriceProvider, JsonStockPriceProvider>();
+}
+
 builder.Services.AddSingleton<IStockRankingCache>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<StockRankingCacheOptions>>().Value;
