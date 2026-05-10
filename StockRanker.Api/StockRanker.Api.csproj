@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>stockranker-api-8e0bda12-07d8-45ff-8d1f-1670a705f32a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

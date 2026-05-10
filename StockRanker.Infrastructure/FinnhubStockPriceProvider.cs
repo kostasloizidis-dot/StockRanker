@@ -11,11 +11,20 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
 
     private readonly HttpClient _httpClient;
     private readonly FinnhubOptions _options;
+    private readonly JsonStockPriceProviderOptions _jsonOptions;
+    private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
-    public FinnhubStockPriceProvider(HttpClient httpClient, IOptions<FinnhubOptions> options)
+    public FinnhubStockPriceProvider(
+        HttpClient httpClient,
+        IOptions<FinnhubOptions> options,
+        IOptions<JsonStockPriceProviderOptions> jsonOptions)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _options = (options ?? throw new ArgumentNullException(nameof(options))).Value;
+        _jsonOptions = (jsonOptions ?? throw new ArgumentNullException(nameof(jsonOptions))).Value;
     }
 
     public Task<IReadOnlyList<StockCompany>> GetTrackedCompaniesAsync(CancellationToken cancellationToken = default)
@@ -49,6 +58,11 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         var closes = await GetHistoricalClosesAsync(symbol, cancellationToken);
         if (!closes.Any())
         {
+            closes = await GetSeededHistoricalClosesAsync(symbol, quote.CurrentPrice, cancellationToken);
+        }
+
+        if (!closes.Any())
+        {
             return new StockDataFetchResult(company, quote.CurrentPrice, quote.LatestClose, Array.Empty<StockPricePoint>(), false, "No historical close data.");
         }
 
@@ -67,7 +81,7 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
             }
 
             var content = await response.Content.ReadFromJsonAsync<QuoteResponse>(cancellationToken: cancellationToken);
-            if (content is null || content.Status != "ok")
+            if (content is null || (content.CurrentPrice <= 0m && content.LatestClose <= 0m))
             {
                 return null;
             }
@@ -102,8 +116,9 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
                 return Array.Empty<StockPricePoint>();
             }
 
-            var points = new List<StockPricePoint>(content.ClosePrices.Count);
-            for (var index = 0; index < content.ClosePrices.Count; index++)
+            var count = Math.Min(content.ClosePrices.Count, content.Timestamps.Count);
+            var points = new List<StockPricePoint>(count);
+            for (var index = 0; index < count; index++)
             {
                 points.Add(new StockPricePoint(DateTimeOffset.FromUnixTimeSeconds(content.Timestamps[index]), content.ClosePrices[index]));
             }
@@ -116,6 +131,32 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         }
     }
 
+    private async Task<IReadOnlyList<StockPricePoint>> GetSeededHistoricalClosesAsync(
+        string symbol,
+        decimal currentPrice,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(_jsonOptions.FilePath))
+        {
+            return Array.Empty<StockPricePoint>();
+        }
+
+        var json = await File.ReadAllTextAsync(_jsonOptions.FilePath, cancellationToken);
+        var prices = JsonSerializer.Deserialize<IReadOnlyList<JsonStockPrice>>(json, _serializerOptions) ?? Array.Empty<JsonStockPrice>();
+        var price = prices.FirstOrDefault(price => string.Equals(price.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
+        if (price is null || price.SixMonthLow <= 0m)
+        {
+            return Array.Empty<StockPricePoint>();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        return new[]
+        {
+            new StockPricePoint(now.AddDays(-183), price.SixMonthLow),
+            new StockPricePoint(now, currentPrice)
+        };
+    }
+
     private sealed class QuoteResponse
     {
         [System.Text.Json.Serialization.JsonPropertyName("c")]
@@ -126,9 +167,6 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
 
         [System.Text.Json.Serialization.JsonPropertyName("t")]
         public long Timestamp { get; set; }
-
-        [System.Text.Json.Serialization.JsonPropertyName("s")]
-        public string? Status { get; set; }
     }
 
     private sealed class CandleResponse
@@ -142,4 +180,10 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         [System.Text.Json.Serialization.JsonPropertyName("s")]
         public string? Status { get; set; }
     }
+
+    private sealed record JsonStockPrice(
+        string Symbol,
+        string CompanyName,
+        decimal CurrentPrice,
+        decimal SixMonthLow);
 }
