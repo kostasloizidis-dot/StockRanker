@@ -1,122 +1,102 @@
 [
   {
-    "symbol": "AAPL",
-    "companyName": "Apple Inc.",
-    "currentPrice": 182.80,
-    "sixMonthLow": 164.08
+    "ticker": "AAPL",
+    "company": "Apple Inc.",
+    "six_month_low": 193.12
   },
   {
-    "symbol": "MSFT",
-    "companyName": "Microsoft Corporation",
-    "currentPrice": 421.18,
-    "sixMonthLow": 369.42
+    "ticker": "MSFT",
+    "company": "Microsoft Corporation",
+    "six_month_low": 376.91
   },
   {
-    "symbol": "AMZN",
-    "companyName": "Amazon.com, Inc.",
-    "currentPrice": 184.31,
-    "sixMonthLow": 151.61
+    "ticker": "AMZN",
+    "company": "Amazon.com, Inc.",
+    "six_month_low": 151.61
   },
   {
-    "symbol": "GOOGL",
-    "companyName": "Alphabet Inc. (Class A)",
-    "currentPrice": 171.95,
-    "sixMonthLow": 138.21
+    "ticker": "GOOGL",
+    "company": "Alphabet Inc. (Class A)",
+    "six_month_low": 147.22
   },
   {
-    "symbol": "META",
-    "companyName": "Meta Platforms, Inc.",
-    "currentPrice": 493.50,
-    "sixMonthLow": 414.50
+    "ticker": "META",
+    "company": "Meta Platforms, Inc.",
+    "six_month_low": 441.55
   },
   {
-    "symbol": "NVDA",
-    "companyName": "NVIDIA Corporation",
-    "currentPrice": 875.28,
-    "sixMonthLow": 403.26
+    "ticker": "NVDA",
+    "company": "NVIDIA Corporation",
+    "six_month_low": 86.74
   },
   {
-    "symbol": "TSLA",
-    "companyName": "Tesla, Inc.",
-    "currentPrice": 175.34,
-    "sixMonthLow": 138.80
+    "ticker": "TSLA",
+    "company": "Tesla, Inc.",
+    "six_month_low": 167.41
   },
   {
-    "symbol": "BRK.B",
-    "companyName": "Berkshire Hathaway Inc. (Class B)",
-    "currentPrice": 410.22,
-    "sixMonthLow": 339.68
+    "ticker": "BRK.B",
+    "company": "Berkshire Hathaway Inc. (Class B)",
+    "six_month_low": 403.82
   },
   {
-    "symbol": "JNJ",
-    "companyName": "Johnson & Johnson",
-    "currentPrice": 151.81,
-    "sixMonthLow": 143.13
+    "ticker": "JNJ",
+    "company": "Johnson & Johnson",
+    "six_month_low": 143.66
   },
   {
-    "symbol": "V",
-    "companyName": "Visa Inc.",
-    "currentPrice": 278.44,
-    "sixMonthLow": 228.03
+    "ticker": "V",
+    "company": "Visa Inc.",
+    "six_month_low": 252.17
   },
   {
-    "symbol": "JPM",
-    "companyName": "JPMorgan Chase & Co.",
-    "currentPrice": 198.73,
-    "sixMonthLow": 135.19
+    "ticker": "JPM",
+    "company": "JPMorgan Chase & Co.",
+    "six_month_low": 179.45
   },
   {
-    "symbol": "PG",
-    "companyName": "The Procter & Gamble Company",
-    "currentPrice": 161.09,
-    "sixMonthLow": 141.45
+    "ticker": "PG",
+    "company": "The Procter & Gamble Company",
+    "six_month_low": 156.91
   },
   {
-    "symbol": "UNH",
-    "companyName": "UnitedHealth Group Incorporated",
-    "currentPrice": 492.18,
-    "sixMonthLow": 436.38
+    "ticker": "UNH",
+    "company": "UnitedHealth Group Incorporated",
+    "six_month_low": 436.38
   },
   {
-    "symbol": "HD",
-    "companyName": "The Home Depot, Inc.",
-    "currentPrice": 342.61,
-    "sixMonthLow": 274.26
+    "ticker": "HD",
+    "company": "The Home Depot, Inc.",
+    "six_month_low": 323.77
   },
   {
-    "symbol": "MA",
-    "companyName": "Mastercard Incorporated",
-    "currentPrice": 457.13,
-    "sixMonthLow": 359.77
+    "ticker": "MA",
+    "company": "Mastercard Incorporated",
+    "six_month_low": 428.66
   },
   {
-    "symbol": "KO",
-    "companyName": "The Coca-Cola Company",
-    "currentPrice": 61.84,
-    "sixMonthLow": 51.55
+    "ticker": "KO",
+    "company": "The Coca-Cola Company",
+    "six_month_low": 59.87
   },
   {
-    "symbol": "PEP",
-    "companyName": "PepsiCo, Inc.",
-    "currentPrice": 172.18,
-    "sixMonthLow": 155.83
+    "ticker": "PEP",
+    "company": "PepsiCo, Inc.",
+    "six_month_low": 157.21
   },
   {
-    "symbol": "DIS",
-    "companyName": "The Walt Disney Company",
-    "currentPrice": 112.08,
-    "sixMonthLow": 78.73
+    "ticker": "DIS",
+    "company": "The Walt Disney Company",
+    "six_month_low": 83.91
   },
   {
-    "symbol": "XOM",
-    "companyName": "Exxon Mobil Corporation",
-    "currentPrice": 116.24,
-    "sixMonthLow": 95.77
+    "ticker": "XOM",
+    "company": "Exxon Mobil Corporation",
+    "six_month_low": 97.48
   },
   {
-    "symbol": "BAC",
-    "companyName": "Bank of America Corporation",
-    "currentPrice": 37.52,
-    "sixMonthLow": 24.96
+    "ticker": "BAC",
+    "company": "Bank of America Corporation",
+    "six_month_low": 33.07
   }
 ]

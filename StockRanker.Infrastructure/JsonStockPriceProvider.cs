@@ -21,6 +21,7 @@ public sealed class JsonStockPriceProvider : IStockPriceProvider
     {
         var prices = await ReadPricesAsync(cancellationToken);
         return prices
+            .Where(price => !string.IsNullOrWhiteSpace(price.Symbol))
             .Select(price => new StockCompany(price.Symbol, price.CompanyName))
             .ToList();
     }
@@ -41,7 +42,8 @@ public sealed class JsonStockPriceProvider : IStockPriceProvider
         }
 
         var company = new StockCompany(price.Symbol, price.CompanyName);
-        if (price.CurrentPrice <= 0 || price.SixMonthLow <= 0)
+        var currentPrice = price.CurrentPrice.GetValueOrDefault(price.PriceSixMonthsAgo);
+        if (currentPrice <= 0 || price.PriceSixMonthsAgo <= 0)
         {
             return new StockDataFetchResult(company, null, null, Array.Empty<StockPricePoint>(), false, "Prices must be greater than zero.");
         }
@@ -49,14 +51,13 @@ public sealed class JsonStockPriceProvider : IStockPriceProvider
         var now = DateTimeOffset.UtcNow;
         var historicalCloses = new[]
         {
-            new StockPricePoint(now.AddDays(-183), price.SixMonthLow),
-            new StockPricePoint(now, price.CurrentPrice)
+            new StockPricePoint(now.AddDays(-183), price.PriceSixMonthsAgo)
         };
 
         return new StockDataFetchResult(
             company,
-            price.CurrentPrice,
-            LatestClose: price.CurrentPrice,
+            currentPrice,
+            LatestClose: currentPrice,
             HistoricalCloses: historicalCloses,
             IsSuccess: true,
             ErrorMessage: null);
@@ -73,9 +74,34 @@ public sealed class JsonStockPriceProvider : IStockPriceProvider
         return JsonSerializer.Deserialize<IReadOnlyList<JsonStockPrice>>(json, _serializerOptions) ?? Array.Empty<JsonStockPrice>();
     }
 
-    private sealed record JsonStockPrice(
-        string Symbol,
-        string CompanyName,
-        decimal CurrentPrice,
-        decimal SixMonthLow);
+    private sealed class JsonStockPrice
+    {
+        public string? SymbolValue { get; set; }
+        public string? Ticker { get; set; }
+        public string? CompanyNameValue { get; set; }
+        public string? Company { get; set; }
+        public decimal? CurrentPrice { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("six_month_low")]
+        public decimal? SixMonthLow { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("price_6_months_ago")]
+        public decimal? PriceSixMonthsAgoValue { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("symbol")]
+        public string Symbol
+        {
+            get => SymbolValue ?? Ticker ?? string.Empty;
+            set => SymbolValue = value;
+        }
+
+        [System.Text.Json.Serialization.JsonPropertyName("companyName")]
+        public string CompanyName
+        {
+            get => CompanyNameValue ?? Company ?? Symbol;
+            set => CompanyNameValue = value;
+        }
+
+        public decimal PriceSixMonthsAgo => PriceSixMonthsAgoValue ?? SixMonthLow ?? 0m;
+    }
 }
