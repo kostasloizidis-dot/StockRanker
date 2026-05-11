@@ -8,7 +8,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5139";
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+if (string.IsNullOrWhiteSpace(apiBaseUrl) || apiBaseUrl.Contains("localhost:5139", StringComparison.OrdinalIgnoreCase))
+{
+    apiBaseUrl = "http://localhost:5000";
+}
+Console.WriteLine($"Using StockRanker API base URL: {apiBaseUrl}");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
 var app = builder.Build();

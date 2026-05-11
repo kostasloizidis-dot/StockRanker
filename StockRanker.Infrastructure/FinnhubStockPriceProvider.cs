@@ -144,7 +144,7 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         var json = await File.ReadAllTextAsync(_jsonOptions.FilePath, cancellationToken);
         var prices = JsonSerializer.Deserialize<IReadOnlyList<JsonStockPrice>>(json, _serializerOptions) ?? Array.Empty<JsonStockPrice>();
         var price = prices.FirstOrDefault(price => string.Equals(price.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
-        if (price is null || price.SixMonthLow <= 0m)
+        if (price is null || price.PriceSixMonthsAgo <= 0m)
         {
             return Array.Empty<StockPricePoint>();
         }
@@ -152,8 +152,7 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         var now = DateTimeOffset.UtcNow;
         return new[]
         {
-            new StockPricePoint(now.AddDays(-183), price.SixMonthLow),
-            new StockPricePoint(now, currentPrice)
+            new StockPricePoint(now.AddDays(-183), price.PriceSixMonthsAgo)
         };
     }
 
@@ -181,9 +180,31 @@ public sealed class FinnhubStockPriceProvider : IStockPriceProvider
         public string? Status { get; set; }
     }
 
-    private sealed record JsonStockPrice(
-        string Symbol,
-        string CompanyName,
-        decimal CurrentPrice,
-        decimal SixMonthLow);
+    private sealed class JsonStockPrice
+    {
+        public string? SymbolValue { get; set; }
+        public string? Ticker { get; set; }
+        public string? CompanyNameValue { get; set; }
+        public string? Company { get; set; }
+        public decimal? SixMonthLow { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("price_6_months_ago")]
+        public decimal? PriceSixMonthsAgoValue { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("symbol")]
+        public string Symbol
+        {
+            get => SymbolValue ?? Ticker ?? string.Empty;
+            set => SymbolValue = value;
+        }
+
+        [System.Text.Json.Serialization.JsonPropertyName("companyName")]
+        public string CompanyName
+        {
+            get => CompanyNameValue ?? Company ?? Symbol;
+            set => CompanyNameValue = value;
+        }
+
+        public decimal PriceSixMonthsAgo => PriceSixMonthsAgoValue ?? SixMonthLow ?? 0m;
+    }
 }
