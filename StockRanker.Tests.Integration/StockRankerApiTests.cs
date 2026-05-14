@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StockRanker.Domain;
 
 namespace StockRanker.Tests.Integration;
@@ -17,12 +18,30 @@ public class StockRankerApiTests : IClassFixture<WebApplicationFactory<Program>>
         {
             builder.ConfigureServices(services =>
             {
+                services.AddLogging(logging =>
+                {
+                    logging.ClearProviders();
+                });
+
                 services.AddSingleton<IStockPriceProvider>(new FakeStockPriceProvider());
                 services.AddSingleton<IStockRankingCache>(new InMemoryRankingCache());
             });
         });
 
         _client = appFactory.CreateClient();
+    }
+
+    [Fact]
+    public async Task Root_ReturnsApiInfo()
+    {
+        var response = await _client.GetAsync("/");
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(content);
+
+        Assert.Equal("StockRanker API", json.RootElement.GetProperty("name").GetString());
+        Assert.Equal("/swagger", json.RootElement.GetProperty("swagger").GetString());
     }
 
     [Fact]

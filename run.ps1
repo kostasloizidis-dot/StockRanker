@@ -4,6 +4,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    $PSNativeCommandUseErrorActionPreference = $true
+}
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ApiProject = Join-Path $Root "StockRanker.Api"
@@ -55,9 +58,15 @@ try {
     if (-not $SkipBuild) {
         Write-Host "Building API..."
         dotnet build ".\StockRanker.Api\StockRanker.Api.csproj" -v:minimal
+        if ($LASTEXITCODE -ne 0) {
+            throw "API build failed with exit code $LASTEXITCODE"
+        }
 
         Write-Host "Building UI..."
         dotnet build ".\StockRanker.Ui\StockRanker.Ui.csproj" -v:minimal
+        if ($LASTEXITCODE -ne 0) {
+            throw "UI build failed with exit code $LASTEXITCODE"
+        }
     }
 
     Stop-PortOwner -Port 5139
