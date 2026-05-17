@@ -48,13 +48,22 @@ builder.Services.AddSingleton<IStockRankingService, StockRankingService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.MapGet("/", () => Results.Ok(new
+{
+    Name = "StockRanker API",
+    Swagger = "/swagger",
+    Endpoints = new[]
+    {
+        new { Method = "GET", Path = "/api/stocks/rankings", Description = "Returns the latest cached stock ranking snapshot, refreshing it if no cache exists." },
+        new { Method = "POST", Path = "/api/stocks/refresh", Description = "Refreshes stock data and returns a new ranking snapshot." }
+    }
+}))
+    .WithName("GetApiInfo");
 
 app.MapGet("/api/stocks/rankings", async (IStockRankingService ranker) => Results.Ok(await ranker.GetLatestRankingsAsync()))
     .WithName("GetStockRankings");
